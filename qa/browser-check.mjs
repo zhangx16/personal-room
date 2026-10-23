@@ -44,7 +44,12 @@ try {
  if(await page.getByLabel('Emby 用户名',{exact:true}).inputValue()!=='qa_viewer')throw Error('Emby recognition failed');
  if(await page.getByLabel(/^保险箱口令/).count())throw Error('Emby must not require a vault passphrase');
  await page.getByRole('button',{name:'保存Emby 账号',exact:true}).click();await page.getByRole('dialog').waitFor({state:'hidden'});
- await page.getByText('用户密码：qa-password-only\n安全密码：qa-safe-only',{exact:true}).waitFor();
+ await page.getByText('qa-password-only',{exact:true}).waitFor();
+ await context.grantPermissions(['clipboard-read','clipboard-write']);
+ for(const [label,value] of [['复制用户密码','qa-password-only'],['复制安全密码','qa-safe-only']]){
+   await page.getByRole('button',{name:label,exact:true}).click();
+   if(await page.evaluate(()=>navigator.clipboard.readText())!==value)throw Error('Incorrect individual credential copied');
+ }
  const emby=JSON.parse(db.prepare("SELECT payload FROM records WHERE json_extract(payload,'$.kind')='emby'").get().payload);
  if(JSON.stringify(emby).includes('qa-password-only')||JSON.stringify(emby).includes('qa-safe-only'))throw Error('Plaintext Emby credential persisted');
  await page.setViewportSize({width:1440,height:900});await page.getByRole('button',{name:'安全设置',exact:true}).click();
