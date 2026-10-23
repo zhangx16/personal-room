@@ -2,7 +2,7 @@ import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { resolve, extname, sep } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { randomBytes } from 'node:crypto';
+import { randomBytes, createHmac } from 'node:crypto';
 import { openDatabase } from './db.mjs';
 import { hash, token, passwordHash, checkPassword, base32, verifyTotp, encrypt, decrypt } from './security.mjs';
 import { validRecord } from './validate.mjs';
@@ -97,6 +97,12 @@ export function createApp({db,master,origin='http://localhost:22836',siteName='D
           }catch{return reply({error:'设备验证失败'},401);}
         }
         if(!authorized(request)) return reply({error:'登录已过期，请重新登录'},401);
+        if(path==='/api/emby-key' && request.method==='POST') {
+          if(typeof body.id!=='string'||!/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(body.id)) return reply({error:'账号编号无效'},400);
+          const existing=db.prepare('SELECT payload FROM records WHERE id=?').get(body.id);
+          if(existing&&JSON.parse(existing.payload).kind!=='emby')return reply({error:'账号类型无效'},400);
+          return reply({key:createHmac('sha256',master).update('emby-account-v1:'+body.id.toLowerCase()).digest('base64url')});
+        }
         if(path==='/api/passkeys'&&request.method==='GET')return reply(db.prepare('SELECT id,name FROM passkeys').all());
         if(path==='/api/passkeys/register-options'&&request.method==='POST') {
           if(throttle(`register:${ip}`))return reply({error:'尝试过于频繁'},429);

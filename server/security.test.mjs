@@ -92,3 +92,13 @@ test('invalid passkey attempts cannot authenticate and login rate limits persist
   assert.equal((await f.call('login',{username:'admin',password:'wrong'})).status,429);
   assert.ok(f.db.prepare('SELECT count FROM limits WHERE key=?').get('login:test-ip').count>8);
 });
+test('Emby managed keys require login and remain stable per account',async t=>{
+  const f=fixture(t);const id=randomUUID();
+  assert.equal((await f.call('emby-key',{id})).status,401);
+  const {cookie}=await f.enroll();
+  const first=await (await f.call('emby-key',{id},cookie)).json();
+  const again=await (await f.call('emby-key',{id},cookie)).json();
+  const other=await (await f.call('emby-key',{id:randomUUID()},cookie)).json();
+  assert.equal(first.key,again.key);assert.notEqual(first.key,other.key);
+  assert.equal((await f.call('emby-key',{id:'invalid'},cookie)).status,400);
+});
