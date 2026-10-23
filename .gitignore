@@ -5,3 +5,14 @@ data/
 !.env.example
 *.tsbuildinfo
 .scaffold-archive/
+backups/
+playwright-report/
+test-results/
+HANDOFF.md
+VERIFICATION.md
+REQUIREMENTS.md
+initial-admin.txt
+*.sqlite
+*.sqlite-*
+*.key
+*.pem

@@ -24,7 +24,7 @@ function fixture(t){
   const directory=mkdtempSync(join(tmpdir(),'dev-room-test-'));
   const {db,master}=openDatabase(directory);let clock=Date.UTC(2026,9,23,12,0,1);
   db.prepare('INSERT INTO admin(id,username,password) VALUES(1,?,?)').run('admin',passwordHash('secure-test-password'));
-  const origin='https://room.031216.xyz';const handle=createApp({db,master,origin,now:()=>clock});
+  const origin='https://room.example.test';const handle=createApp({db,master,origin,now:()=>clock});
   t.after(()=>{db.close();rmSync(directory,{recursive:true,force:true});});
   const request=(path,body,cookie='',overrides={})=>new Request(origin+'/api/'+path,{method:body===undefined?'GET':'POST',headers:{'Content-Type':'application/json',Origin:origin,Cookie:cookie,...overrides},...(body===undefined?{}:{body:JSON.stringify(body)})});
   const call=(path,body,cookie='',overrides={})=>handle(request(path,body,cookie,overrides),'test-ip');
@@ -82,8 +82,8 @@ test('records enforce validation and optimistic versions; plaintext secret field
   assert.equal((await f.call('records',{...record,id:randomUUID(),kind:'secret',content:'plaintext-key',sessions:[]},cookie)).status,400);
   assert.equal((await f.call('records',{...record,id:randomUUID(),plaintext:'bad'},cookie)).status,400);
   const rows=await (await f.call('records',undefined,cookie)).json();assert.equal(rows.length,1);assert.equal(rows[0].title,'修改');
-  assert.equal((await f.handle(new Request('https://room.031216.xyz/api/records?id='+record.id+'&version=1',{method:'DELETE',headers:{Origin:'https://room.031216.xyz',Cookie:cookie}}))).status,409);
-  assert.equal((await f.handle(new Request('https://room.031216.xyz/api/records?id='+record.id+'&version=2',{method:'DELETE',headers:{Origin:'https://room.031216.xyz',Cookie:cookie}}))).status,200);
+  assert.equal((await f.handle(new Request('https://room.example.test/api/records?id='+record.id+'&version=1',{method:'DELETE',headers:{Origin:'https://room.example.test',Cookie:cookie}}))).status,409);
+  assert.equal((await f.handle(new Request('https://room.example.test/api/records?id='+record.id+'&version=2',{method:'DELETE',headers:{Origin:'https://room.example.test',Cookie:cookie}}))).status,200);
 });
 test('invalid passkey attempts cannot authenticate and login rate limits persist in SQLite',async t=>{
   const f=fixture(t);

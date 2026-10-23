@@ -6,10 +6,11 @@ import { randomBytes } from 'node:crypto';
 import { openDatabase } from './db.mjs';
 import { hash, token, passwordHash, checkPassword, base32, verifyTotp, encrypt, decrypt } from './security.mjs';
 import { validRecord } from './validate.mjs';
+import { runtimeConfig } from './config.mjs';
 
 const headers={ 'Cache-Control':'no-store', 'X-Content-Type-Options':'nosniff', 'Referrer-Policy':'no-referrer', 'X-Frame-Options':'DENY', 'Content-Security-Policy':"default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'" };
 const reply=(data,status=200,extra={})=>new Response(JSON.stringify(data),{status,headers:{...headers,'Content-Type':'application/json; charset=utf-8',...extra}});
-export function createApp({db,master,origin='https://room.031216.xyz',dist=resolve('dist'),now=()=>Date.now()}) {
+export function createApp({db,master,origin='http://localhost:22836',siteName='Dev Room',dist=resolve('dist'),now=()=>Date.now()}) {
   const cookie=(name,value,maxAge)=>`${name}=${value}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=${maxAge}`;
   const cookies=request=>Object.fromEntries((request.headers.get('cookie')||'').split(';').map(v=>v.trim().split('=')));
   function throttle(key,max=8,window=15*60*1000) {
@@ -29,6 +30,7 @@ export function createApp({db,master,origin='https://room.031216.xyz',dist=resol
     try {
       const url=new URL(request.url); const path=url.pathname;
       if(path==='/api/health') return reply({ok:true});
+      if(path==='/api/config' && request.method==='GET') return reply({siteName});
       if(path.startsWith('/api/')) {
         if(!['GET','POST','DELETE'].includes(request.method)) return reply({error:'请求方法不支持'},405);
         if(request.method!=='GET' && request.headers.get('origin')!==origin) return reply({error:'请求来源无效'},403);
@@ -48,7 +50,7 @@ export function createApp({db,master,origin='https://room.031216.xyz',dist=resol
             const secret=base32(randomBytes(20)), value=token();
             db.prepare('DELETE FROM pending WHERE expires<=?').run(now());
             db.prepare('INSERT INTO pending(token,secret,expires) VALUES(?,?,?)').run(hash(value),encrypt(secret,master),now()+5*60000);
-            return reply({setupRequired:true,secret,uri:`otpauth://totp/Dev%20Room:admin?secret=${secret}&issuer=Dev%20Room&algorithm=SHA1&digits=6&period=30`},200,{'Set-Cookie':cookie('__Host_room_setup',value,300)});
+            return reply({setupRequired:true,secret,uri:`otpauth://totp/${encodeURIComponent(siteName)}:${encodeURIComponent(admin.username)}?secret=${secret}&issuer=${encodeURIComponent(siteName)}&algorithm=SHA1&digits=6&period=30`},200,{'Set-Cookie':cookie('__Host_room_setup',value,300)});
           }
           if(!verifyAdminFactor(admin,body.code)) return reply({error:'账号、密码或验证码不正确'},401);
           db.prepare('DELETE FROM limits WHERE key=?').run(`login:${ip}`);
@@ -101,7 +103,7 @@ export function createApp({db,master,origin='https://room.031216.xyz',dist=resol
           const admin=db.prepare('SELECT * FROM admin WHERE id=1').get();
           if(typeof body.password!=='string'||!checkPassword(body.password,admin.password)||!verifyAdminFactor(admin,body.code))return reply({error:'密码或验证码不正确'},401);
           const {generateRegistrationOptions}=await import('@simplewebauthn/server');
-          const options=await generateRegistrationOptions({rpName:'Dev Room',rpID:new URL(origin).hostname,userName:admin.username,userID:new TextEncoder().encode('dev-room-admin'),attestationType:'none',authenticatorSelection:{residentKey:'required',userVerification:'required',authenticatorAttachment:'platform'},excludeCredentials:db.prepare('SELECT id FROM passkeys').all().map(k=>({id:k.id}))});
+          const options=await generateRegistrationOptions({rpName:siteName,rpID:new URL(origin).hostname,userName:admin.username,userID:new TextEncoder().encode('dev-room-admin'),attestationType:'none',authenticatorSelection:{residentKey:'required',userVerification:'required',authenticatorAttachment:'platform'},excludeCredentials:db.prepare('SELECT id FROM passkeys').all().map(k=>({id:k.id}))});
           const value=token();db.prepare('INSERT INTO challenges(token,kind,challenge,session,expires) VALUES(?,?,?,?,?)').run(hash(value),'register',options.challenge,hash(cookies(request).__Host_room),now()+180000);
           return reply(options,200,{'Set-Cookie':cookie('__Host_room_webauthn',value,180)});
         }
@@ -159,10 +161,10 @@ export function createApp({db,master,origin='https://room.031216.xyz',dist=resol
     }catch {return reply({error:'服务暂时不可用，请重试'},500);}
   };
 }
-if(process.argv[1]&&import.meta.url===pathToFileURL(resolve(process.argv[1])).href) {
-  const {db,master}=openDatabase(resolve(process.env.PORTAL_DATA_DIR||'data'));
-  const origin=process.env.PORTAL_ORIGIN||'https://room.031216.xyz';
-  const handle=createApp({db,master,origin});
+export function startServer(config=runtimeConfig()) {
+  const {db,master}=openDatabase(config.directory);
+  const {origin}=config;
+  const handle=createApp({db,master,origin,siteName:config.siteName});
   const server=createServer(async(req,res)=>{
     const chunks=[];let size=0;
     for await(const chunk of req){size+=chunk.length;if(size>120000){res.writeHead(413);res.end('Request too large');return;}chunks.push(chunk);}
@@ -171,6 +173,8 @@ if(process.argv[1]&&import.meta.url===pathToFileURL(resolve(process.argv[1])).hr
     res.writeHead(response.status,Object.fromEntries(response.headers));res.end(Buffer.from(await response.arrayBuffer()));
   });
   const timer=setInterval(()=>{const time=Date.now();for(const table of ['sessions','pending','limits','challenges'])db.prepare(`DELETE FROM ${table} WHERE expires<=?`).run(time);},300000);timer.unref();
-  server.listen(Number(process.env.PORT||22836),process.env.HOST||'127.0.0.1',()=>console.log('Dev Room listening on loopback.'));
+  server.listen(config.port,config.host,()=>console.log(`${config.siteName} listening on ${config.host}:${config.port}`));
   process.once('SIGTERM',()=>server.close(()=>{db.close();process.exit(0);}));
+  return server;
 }
+if(process.argv[1]&&import.meta.url===pathToFileURL(resolve(process.argv[1])).href) startServer();

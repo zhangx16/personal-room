@@ -4,15 +4,12 @@ After=network.target
 
 [Service]
 Type=simple
-User=devroom
-Group=devroom
-WorkingDirectory=/opt/dev-room
+User=__USER__
+Group=__USER__
+WorkingDirectory=__INSTALL_DIR__
 Environment=NODE_ENV=production
-Environment=PORT=22836
-Environment=HOST=127.0.0.1
-Environment=PORTAL_ORIGIN=https://room.031216.xyz
-Environment=PORTAL_DATA_DIR=/var/lib/dev-room
-ExecStart=/usr/bin/node /opt/dev-room/server/index.mjs
+EnvironmentFile=/etc/__SERVICE__.env
+ExecStart=__NODE__ __INSTALL_DIR__/server/bootstrap.mjs
 Restart=on-failure
 RestartSec=5
 UMask=0077
@@ -20,7 +17,7 @@ NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
-ReadWritePaths=/var/lib/dev-room
+ReadWritePaths=__DATA_DIR__
 ProtectKernelTunables=true
 ProtectKernelModules=true
 ProtectControlGroups=true

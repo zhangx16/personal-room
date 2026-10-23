@@ -1,0 +1,22 @@
+services:
+  web:
+    build: .
+    restart: unless-stopped
+    init: true
+    environment:
+      PORTAL_ORIGIN: ${PORTAL_ORIGIN:?请先复制 .env.example 为 .env 并设置访问地址}
+      PORTAL_SITE_NAME: ${PORTAL_SITE_NAME:-Dev Room}
+      PORTAL_ADMIN_USERNAME: ${PORTAL_ADMIN_USERNAME:-admin}
+      PORT: "22836"
+      HOST: 0.0.0.0
+      PORTAL_DATA_DIR: /app/data
+    ports:
+      - "127.0.0.1:${PORT:-22836}:22836"
+    volumes:
+      - portal_data:/app/data
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+volumes:
+  portal_data:
