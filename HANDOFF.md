@@ -2,6 +2,8 @@
 
 项目目录：`/root/dev-portal`
 
+GitHub：https://github.com/zhangx16/personal-room
+
 正式域名：`https://room.031216.xyz`（已部署）
 
 当前会话恢复命令：

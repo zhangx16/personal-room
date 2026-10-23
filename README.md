@@ -1,5 +1,7 @@
 # Dev Room · 私人开发空间
 
+源码仓库：https://github.com/zhangx16/personal-room
+
 目标地址：`https://room.031216.xyz`。已部署上线，HTTPS 与未登录访问拦截已验证；完整构建和浏览器流程检查通过。
 
 ## 功能
