@@ -37,6 +37,17 @@ try {
  await page.getByRole('button',{name:'新增密钥',exact:true}).click();await page.getByLabel('名称',{exact:true}).fill('测试密钥');await page.getByLabel('密钥 / 密码',{exact:true}).fill('fake-key-qa-only');await page.getByLabel(/^保险箱口令/).first().fill('vault-test-password-123');await page.getByRole('button',{name:'保存密钥',exact:true}).click();await page.getByRole('dialog').waitFor({state:'hidden'});
  await page.getByRole('textbox',{name:'保险箱口令',exact:true}).fill('vault-test-password-123');await page.getByRole('button',{name:'解锁',exact:true}).click();await page.getByText('fake-key-qa-only',{exact:true}).waitFor();
  await page.getByRole('button',{name:'立即锁定',exact:true}).click();await page.getByText('fake-key-qa-only',{exact:true}).waitFor({state:'hidden'});
+ await page.getByRole('button',{name:'关闭详情',exact:true}).click();
+ await page.getByRole('button',{name:'新增Emby 账号',exact:true}).click();
+ await page.getByLabel(/^粘贴账号消息自动识别/).fill('· 用户名称 | qa_viewer\n· 用户密码 | qa-password-only\n· 安全密码 | qa-safe-only（仅发送一次）\n· 到期时间 | __永久有效__\nhttps://media.example.com');
+ await page.getByRole('button',{name:'识别并填入',exact:true}).click();
+ if(await page.getByLabel('Emby 用户名',{exact:true}).inputValue()!=='qa_viewer')throw Error('Emby recognition failed');
+ await page.getByLabel(/^保险箱口令/).first().fill('vault-test-password-123');
+ await page.getByRole('button',{name:'保存Emby 账号',exact:true}).click();await page.getByRole('dialog').waitFor({state:'hidden'});
+ await page.getByRole('textbox',{name:'保险箱口令',exact:true}).fill('vault-test-password-123');await page.getByRole('button',{name:'解锁',exact:true}).click();
+ await page.getByText('用户密码：qa-password-only\n安全密码：qa-safe-only',{exact:true}).waitFor();
+ const emby=JSON.parse(db.prepare("SELECT payload FROM records WHERE json_extract(payload,'$.kind')='emby'").get().payload);
+ if(JSON.stringify(emby).includes('qa-password-only')||JSON.stringify(emby).includes('qa-safe-only'))throw Error('Plaintext Emby credential persisted');
  await page.setViewportSize({width:1440,height:900});await page.getByRole('button',{name:'安全设置',exact:true}).click();
  const cdp=await context.newCDPSession(page);await cdp.send('WebAuthn.enable');await cdp.send('WebAuthn.addVirtualAuthenticator',{options:{protocol:'ctap2',transport:'internal',hasResidentKey:true,hasUserVerification:true,isUserVerified:true,automaticPresenceSimulation:true}});
  await page.getByLabel('当前登录密码',{exact:true}).fill(password);await page.getByLabel('2FA 动态码 / 恢复码',{exact:true}).fill(recovery[0]);
@@ -46,5 +57,5 @@ try {
  await page.getByText('通行密钥已添加，下次可直接使用设备验证登录。',{exact:true}).waitFor();
  await page.getByRole('button',{name:'Close',exact:true}).click();await page.getByRole('button',{name:'退出登录',exact:true}).click();await page.getByRole('heading',{name:'欢迎回到开发空间'}).waitFor();
  await page.getByRole('button',{name:'Face ID / Windows Hello',exact:true}).click();await page.getByRole('heading',{name:'所有记录'}).waitFor();
- console.log(JSON.stringify({totpEnrollment:true,recordCRUD:true,vaultEncryptDecryptLock:true,virtualPasskeyRegisterAndLogin:true,mobileOverflow,pageErrors:errors}));
+ console.log(JSON.stringify({embyImportAndEncryption:true,totpEnrollment:true,recordCRUD:true,vaultEncryptDecryptLock:true,virtualPasskeyRegisterAndLogin:true,mobileOverflow,pageErrors:errors}));
 } finally {if(browser)await browser.close();await new Promise(r=>server.close(r));db.close();rmSync(directory,{recursive:true,force:true});}

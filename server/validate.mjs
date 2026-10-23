@@ -3,7 +3,7 @@ const address = value => { if(!value) return value==='';try{return ['http:','htt
 export function validRecord(r) {
   const keys=['id','kind','title','description','url','github','adminUrl','tags','status','favorite','order','content','environment','sessions','username','relatedProject','secret','updatedAt','version'];
   if(!r || typeof r!=='object' || Array.isArray(r) || Object.keys(r).some(k=>!keys.includes(k)) || keys.some(k=>!(k in r))) return false;
-  if(!short(r.id,36)||!/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(r.id)||!['project','link','script','secret'].includes(r.kind)) return false;
+  if(!short(r.id,36)||!/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(r.id)||!['project','link','script','secret','emby'].includes(r.kind)) return false;
   if(!short(r.title,120)||!r.title.trim()||!short(r.description,4000)||!short(r.content,50000)||!short(r.environment,300)||!short(r.username,300)||!short(r.relatedProject,120)) return false;
   if(['url','github','adminUrl'].some(k=>!short(r[k],2048)||!address(r[k]))) return false;
   if(!Array.isArray(r.tags)||r.tags.length>12||r.tags.some(t=>!short(t,40))) return false;
@@ -16,6 +16,6 @@ export function validRecord(r) {
     if(![s.salt,s.iv,s.ciphertext].every(v=>b64.test(v))||Buffer.from(s.salt,'base64').length!==16||Buffer.from(s.iv,'base64').length!==12||Buffer.from(s.ciphertext,'base64').length<16) return false;
   }
   // Secrets have one designated encrypted field. Avoid accidental plaintext in the script field.
-  if(r.kind==='secret' && (r.content!==''||r.sessions.length>0)) return false;
+  if(['secret','emby'].includes(r.kind) && (r.content!==''||r.sessions.length>0)) return false;
   return true;
 }

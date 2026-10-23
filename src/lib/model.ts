@@ -10,7 +10,7 @@ export const sessionSchema = z.object({
   directory: z.string().max(500), progress: z.string().max(4000), next: z.string().max(4000),
 }).strict();
 export const recordSchema = z.object({
-  id: z.string().uuid(), kind: z.enum(["project", "link", "script", "secret"]),
+  id: z.string().uuid(), kind: z.enum(["project", "link", "script", "secret", "emby"]),
   title: z.string().trim().min(1, "请输入名称").max(120),
   description: z.string().max(4000), url: webAddress, github: webAddress, adminUrl: webAddress,
   tags: z.array(z.string().max(40)).max(12), status: z.enum(["active", "paused", "done"]),
@@ -24,7 +24,7 @@ export const recordSchema = z.object({
 export type PortalRecord = z.infer<typeof recordSchema>;
 export type Session = z.infer<typeof sessionSchema>;
 export type Kind = PortalRecord["kind"];
-export const kindLabel = { project: "项目", link: "网站", script: "脚本", secret: "密钥" };
+export const kindLabel = { project: "项目", link: "网站", script: "脚本", secret: "密钥", emby: "Emby 账号" };
 export function emptyRecord(kind: Kind): PortalRecord {
   return { id: crypto.randomUUID(), kind, title: "", description: "", url: "", github: "", adminUrl: "", tags: [], status: "active", favorite: false, order: 0, content: "", environment: "", sessions: [], username: "", relatedProject: "", secret: null, updatedAt: new Date().toISOString(), version: 0 };
 }
