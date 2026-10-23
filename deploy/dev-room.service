@@ -1,0 +1,32 @@
+[Unit]
+Description=Dev Room private developer portal
+After=network.target
+
+[Service]
+Type=simple
+User=devroom
+Group=devroom
+WorkingDirectory=/opt/dev-room
+Environment=NODE_ENV=production
+Environment=PORT=22836
+Environment=HOST=127.0.0.1
+Environment=PORTAL_ORIGIN=https://room.031216.xyz
+Environment=PORTAL_DATA_DIR=/var/lib/dev-room
+ExecStart=/usr/bin/node /opt/dev-room/server/index.mjs
+Restart=on-failure
+RestartSec=5
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/dev-room
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+CapabilityBoundingSet=
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+
+[Install]
+WantedBy=multi-user.target
