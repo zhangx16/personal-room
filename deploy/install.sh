@@ -19,6 +19,8 @@ cp -a server/*.mjs /opt/dev-room/server/
 cp package.json package-lock.json /opt/dev-room/
 cd /opt/dev-room
 npm ci --omit=dev --no-audit --no-fund
+chgrp -R devroom /opt/dev-room
+chmod -R g+rX /opt/dev-room
 if [[ ! -f /var/lib/dev-room/portal.sqlite ]]; then
     runuser -u devroom -- env PORTAL_DATA_DIR=/var/lib/dev-room /usr/bin/node server/init.mjs
 fi
@@ -44,5 +46,5 @@ if [[ ! -e /etc/nginx/sites-enabled/room.031216.xyz ]]; then ln -s /etc/nginx/si
 nginx -t
 systemctl reload nginx
 curl --fail --silent --show-error http://127.0.0.1:22836/api/health
-curl --fail --silent --show-error --resolve room.031216.xyz:443:127.0.0.1 https://room.031216.xyz/api/health
+curl --fail --silent --show-error --retry 5 --retry-all-errors --retry-delay 1 --resolve room.031216.xyz:443:127.0.0.1 https://room.031216.xyz/api/health
 printf '\n部署完成：https://room.031216.xyz\n初始凭据（仅首次初始化）：/var/lib/dev-room/initial-admin.txt\n'

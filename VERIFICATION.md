@@ -1,22 +1,20 @@
 # 验证记录
 
-日期：2026-10-23。
+2026-10-23 已部署：https://room.031216.xyz 。
 
 已执行并通过：
 
-- `node server/security.test.mjs`：7 项后端测试通过。
-- `node server/vault.test.mjs`：1 项浏览器加密模块测试通过（使用 Node WebCrypto）。
-- `node --check`：服务入口、校验器与安全辅助模块语法通过。
-- TypeScript transpileModule：16 个 TS/TSX 文件的语法检查通过；这不等于完整类型检查。
-- `bash -n deploy/install.sh`：部署脚本语法通过。
+- npm install：依赖和 package-lock.json 已生成。
+- npm run build：完整 TypeScript 类型检查与 Vite 生产构建通过。
+- npm test：8 项测试通过，覆盖 TOTP、密码、恢复码、会话、CSRF、记录校验和密文完整性。
+- 浏览器独立临时数据库流程：TOTP 首次绑定、恢复码确认、项目/会话保存、密钥加密解锁与重新锁定、Chromium 虚拟通行密钥注册与登录。
+- 浏览器页面错误为 0；390px 手机宽度无横向溢出；桌面及手机截图已查看。
+- 公网首页 HTTP 200，未登录访问 /api/records 为 401；源站与公网 /api/health 均正常。
+- Nginx 配置测试通过，域名专用 HTTPS 证书已签发；证书自动续期已设置。
+- dev-room.service active/enabled；数据目录 0700，server.key 与初始凭据文件 0600。
 
-未完成：
+修复：部署脚本 umask 077 导致发布文件不可被专用服务用户读取，已设置代码目录组为 devroom 并仅授予组读取/目录遍历权限；数据目录继续保持 0700。Nginx reload 后的证书切换瞬间导致首次 curl 校验失败，确认重载后源站与公网证书校验均正常，脚本已加入重试。
 
-- 完整依赖安装、锁文件生成、完整类型检查与 Vite 构建。
-- 浏览器 UI、离线草稿提取、对比度、键盘焦点和各宽度截图验收。
-- iPhone Face ID、Windows Hello 实机注册与登录；WebAuthn PRF 实机解锁。
-- SimpleWebAuthn 成功签名验证流程的集成测试。
-- 域名证书申请、Nginx 配置安装、systemd 启动以及 HTTPS 访问验证。
+尚未完成：用户真实 iPhone/Windows 生物验证及 PRF 设备解锁；备份恢复实机演练；独立对比度审核。没有用虚拟测试替代真机结论，也没有替用户绑定生产 TOTP/通行密钥。
 
-安装失败原因：联网下载无法解析 npm 域名；尝试离线缓存后缺少 `@dnd-kit/core`。已修正 Tailwind Vite 插件与 Vite 8 的 peer 依赖冲突，改用 PostCSS。
-部署限制：当前执行沙箱的可写目录只有 `/root`、`/tmp`，且限制网络与宿主服务访问。尚未向现有 Nginx 站点写入任何配置。
+截图：/tmp/dev-room-login-desktop.png、/tmp/dev-room-login-mobile.png、/tmp/dev-room-qa/workspace-desktop.png、/tmp/dev-room-qa/workspace-mobile.png。

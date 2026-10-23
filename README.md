@@ -1,6 +1,6 @@
 # Dev Room · 私人开发空间
 
-目标地址：`https://room.031216.xyz`。当前源码与部署文件已准备，尚未构建、部署或完成浏览器验收。
+目标地址：`https://room.031216.xyz`。已部署上线，HTTPS 与未登录访问拦截已验证；完整构建和浏览器流程检查通过。
 
 ## 功能
 
@@ -13,7 +13,7 @@ UI 使用 shadcn Radix 组件按 Nova token 与密度调整，图标为 Lucide�
 - 首次管理员凭据由 `npm run init` 随机生成，写入数据目录 `initial-admin.txt`（0600），不写入源码。
 - 首次登录强制绑定 TOTP，显示一次性恢复码；常规登录需要密码及 TOTP/恢复码。
 - 可在安全设置添加通行密钥；注册需再次提供密码及未使用的 TOTP/恢复码。验证强制 `userVerification: required`，实际生物验证或 PIN 由系统控制。
-- Face ID / Windows Hello 的真实设备验收尚未执行。PRF 能力并非所有验证器都具备；不支持时使用保险箱口令。
+- Passkey 注册与登录已通过 Chromium 虚拟验证器测试；Face ID / Windows Hello 仍需在你的真实设备上完成绑定和确认。PRF 能力并非所有验证器都具备；不支持时使用保险箱口令。
 - 密钥使用浏览器 PBKDF2-SHA256（600000 次）与 AES-256-GCM 加密。保险箱口令不上传，无法重置或找回。
 - 设备快捷解锁通过 PRF 输出包装口令，包装结果保存在当前浏览器。PRF 输出不上传。更换浏览器、移除通行密钥或清除站点存储后需重新配置。
 - 服务器 TOTP 密钥使用数据目录 `server.key` 加密。完整服务器恢复需要同时备份数据库和该文件。
@@ -39,10 +39,14 @@ Cloudflare 保持代理开启，SSL/TLS 模式使用 Full (strict)。若有“Ca
 
 本地前端调试 `npm run dev`，API 另用 `PORTAL_ORIGIN=http://localhost:5173 npm start`；必须通过 HTTPS 或 localhost 使用 WebAuthn。生产域名的通行密钥不能移到另一个域名使用。
 
-## 现有环境限制
+## 运行与验收状态
 
-本轮执行环境网络被限制，npm 域名无法解析，离线缓存也缺少 dnd-kit 等包；依赖未安装完成。完整类型检查、Vite 构建、页面截图、iPhone/Windows 真机验证均未完成。当前沙箱仅可写 `/root` 与 `/tmp`，不能安装 `/etc/nginx`、`/etc/systemd` 配置，也不能管理宿主服务，因此不能声称已经上线。
+2026-10-23 已部署：https://room.031216.xyz 。Cloudflare 代理保留，域名专用证书已签发并设置自动续期。服务 `dev-room.service` 已启用开机启动。
 
-后端测试可直接运行 `node server/security.test.mjs` 和 `node server/vault.test.mjs`，不依赖外部包；Passkey 的成功注册与签名验证需要安装 SimpleWebAuthn 后另行验收。
+- 源码：`/root/dev-portal`；运行目录：`/opt/dev-room`；数据：`/var/lib/dev-room`。
+- 初始账号：`admin`；随机初始密码位于 `/var/lib/dev-room/initial-admin.txt`（0600）。首次登录强制绑定 TOTP，再保存恢复码；建议随后修改初始密码并删除该文件。
+- 完整类型检查、生产构建、8 项后端/加密测试通过。
+- 独立临时数据库上的浏览器流程通过：TOTP 绑定、项目与会话保存、密钥加密/解锁/锁定、虚拟通行密钥注册与登录；390px 手机宽度无横向溢出；无页面运行错误。
+- 真实 iPhone/Windows 生物验证、PRF 能力及离线备份恢复的实机验收仍需另行完成；当前未替用户绑定任何真实验证器或设备。
 
-下一次 Codex 可直接从本目录、`REQUIREMENTS.md` 与 `design-contract.md` 继续，先恢复依赖安装及完整构建，再在有宿主系统权限的执行环境运行部署脚本并完成 HTTPS、2FA、Passkey 和移动端验收。
+查看服务：`systemctl status dev-room`；日志：`journalctl -u dev-room`。续接信息见 HANDOFF.md，详细测试见 VERIFICATION.md。
