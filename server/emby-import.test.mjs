@@ -8,3 +8,8 @@ test('Emby message extracts credentials, expiry and deduplicated lines locally',
 test('Emby parser tolerates missing fields and full-width delimiters',()=>{
   assert.deepEqual(parseEmbyMessage('用户名：viewer\n安全码｜safe\n有效期：2027-01-01'),{username:'viewer',password:'',securityCode:'safe',expiry:'2027-01-01',urls:[]});
 });
+test('announcement emoji prefixes and multiple routes are recognized',()=>{
+ const r=parseEmbyMessage('🎬 Example｜线路公告\n🔑 密码：fake-announcement-password\n🔹 主线路：https://main.example.com\n🔹 备用线路：https://backup.example.com');
+ assert.equal(r.password,'fake-announcement-password');
+ assert.deepEqual(r.urls,['https://main.example.com','https://backup.example.com']);
+});

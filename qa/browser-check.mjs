@@ -39,7 +39,7 @@ try {
  await page.getByRole('button',{name:'立即锁定',exact:true}).click();await page.getByText('fake-key-qa-only',{exact:true}).waitFor({state:'hidden'});
  await page.getByRole('button',{name:'关闭详情',exact:true}).click();
  await page.getByRole('button',{name:'新增Emby 账号',exact:true}).click();
- await page.getByLabel(/^粘贴账号消息自动识别/).fill('· 用户名称 | qa_viewer\n· 用户密码 | qa-password-only\n· 安全密码 | qa-safe-only（仅发送一次）\n· 到期时间 | __永久有效__\nhttps://media.example.com');
+ await page.getByLabel(/^粘贴账号消息自动识别/).fill('· 用户名称 | qa_viewer\n· 用户密码 | qa-password-only\n· 安全密码 | qa-safe-only（仅发送一次）\n· 到期时间 | __永久有效__\nhttps://media.example.com\n🔹 备用线路：https://backup.example.com');
  await page.getByRole('button',{name:'识别并填入',exact:true}).click();
  if(await page.getByLabel('Emby 用户名',{exact:true}).inputValue()!=='qa_viewer')throw Error('Emby recognition failed');
  if(await page.getByLabel(/^保险箱口令/).count())throw Error('Emby must not require a vault passphrase');
@@ -51,6 +51,7 @@ try {
    if(await page.evaluate(()=>navigator.clipboard.readText())!==value)throw Error('Incorrect individual credential copied');
  }
  const emby=JSON.parse(db.prepare("SELECT payload FROM records WHERE json_extract(payload,'$.kind')='emby'").get().payload);
+ if(emby.addresses.length!==2||await page.getByRole('link',{name:'打开线路',exact:true}).count()!==2)throw Error('Emby multiple routes not retained');
  if(JSON.stringify(emby).includes('qa-password-only')||JSON.stringify(emby).includes('qa-safe-only'))throw Error('Plaintext Emby credential persisted');
  await page.setViewportSize({width:1440,height:900});await page.getByRole('button',{name:'安全设置',exact:true}).click();
  const cdp=await context.newCDPSession(page);await cdp.send('WebAuthn.enable');await cdp.send('WebAuthn.addVirtualAuthenticator',{options:{protocol:'ctap2',transport:'internal',hasResidentKey:true,hasUserVerification:true,isUserVerified:true,automaticPresenceSimulation:true}});

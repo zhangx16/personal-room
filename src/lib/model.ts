@@ -12,6 +12,7 @@ export const sessionSchema = z.object({
 export const recordSchema = z.object({
   id: z.string().uuid(), kind: z.enum(["project", "link", "script", "secret", "emby"]),
   title: z.string().trim().min(1, "请输入名称").max(120),
+  addresses: z.array(webAddress.refine(value=>!!value,"地址不能为空")).max(30).optional(),
   description: z.string().max(4000), url: webAddress, github: webAddress, adminUrl: webAddress,
   tags: z.array(z.string().max(40)).max(12), status: z.enum(["active", "paused", "done"]),
   favorite: z.boolean(), order: z.number().int().min(0).max(1000000),
@@ -30,6 +31,11 @@ export function emptyRecord(kind: Kind): PortalRecord {
 }
 export function resumeCommand(session: Session) { return `codex resume ${session.thread}`; }
 export function searchText(record: PortalRecord) {
-  return [record.title, record.description, record.url, record.github, record.environment, record.content, ...record.tags,
+  return [record.title, record.description, record.url, ...(record.addresses||[]), record.github, record.environment, record.content, ...record.tags,
     ...record.sessions.flatMap(s => [s.title, s.thread, s.directory, s.progress, s.next])].join(" ").toLowerCase();
+}
+
+export function embyAddresses(record: PortalRecord): string[] {
+  const legacy=record.description.split("\n").filter(line=>line.startsWith("备用线路：")).map(line=>line.slice(5).trim()).filter(value=>/^https?:\/\//.test(value));
+  return [...new Set((record.addresses!==undefined?record.addresses:[record.url,...legacy]).filter(Boolean))];
 }

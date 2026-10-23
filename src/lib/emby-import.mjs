@@ -3,7 +3,7 @@ export function parseEmbyMessage(input) {
   const lines=input.replace(/\r/g,'').split('\n');
   function field(labels) {
     for(const line of lines) {
-      const match=line.match(new RegExp('^\\s*[·•▎>*-]*\\s*(?:'+labels.join('|')+')\\s*[|｜:：]\\s*(.+)$','i'));
+      const match=line.match(new RegExp('^\\s*(?:[·•▎>*-]|\\p{Extended_Pictographic}|\\uFE0F)*\\s*(?:'+labels.join('|')+')\\s*[|｜:：]\\s*(.+)$','iu'));
       if(match) return match[1].trim().replace(/[（(]仅发送一次[）)]\s*$/,'').replace(/^[_*`]+|[_*`]+$/g,'').trim();
     }
     return '';
